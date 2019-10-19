@@ -1,9 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Thu Oct 17 15:12:54 2019
-
-@author: Toke Christian Zinn
-"""
 
 import math
 import numpy
@@ -19,7 +13,7 @@ from tqdm import tqdm
 
 LARGE_T = time.time()
 
-instance = numpy.loadtxt(fname = "C:/Users/tokez/Desktop/data_SPIRP.text")
+instance = numpy.loadtxt(fname = "data_SPIRP.text")
 
 def FullProbSize(n):
     return(sum(math.factorial(i) for i in range(2,n+1)))
@@ -47,7 +41,7 @@ def ExtendPath(path, maxpath = 10000, heuristics = False):
             if heuristics: 
                 if Dist[End(path["p"]),i] >= MaxSingleDist:
                     continue
-            if D <= maxTrip and path["Qty"] + quantities[i] <= Q + min(x for x in quantities.values() if x>0):
+            if D <= maxTrip and path["Qty"] + quantities[i] <= Q + AllowPartial*(-1+min(x for x in quantities.values() if x>0)):
                 local = local + (i,)
             else:
                 path["n"] = path["n"] + (i,)
@@ -140,14 +134,15 @@ LimitPath = True
 MaxSingleDist = 400
 Heuristics = False
 Draw = False
+AllowPartial = False
 PrintSummary = False
-MaxIter = 1
-Periods = 10  # T = 30
+MaxIter = 30
+Periods = 30  # T = 30
 nStores = 40 # S = 40
 T = range(Periods+1) #Periods
 N = range(nStores+1) #Number of Vertices
 S = range(1,nStores+1) #Number of store-only vertices
-L = 3 # deterministic shelf life in {2,3,4}
+L = 4 # deterministic shelf life in {2,3,4}
 a = 6 # acquisition cost
 p = 10 # selling price
 EV = 20 # expected value of demand
@@ -155,9 +150,9 @@ Q = 120 # vehicle capacity
 maxTrip = 230 # maximum trip length
 TSL = 0.9 # target service level
 
-LongTermPolishing = True
+LongTermPolishing = False
 
-MyopicPolishing = True
+MyopicPolishing = False
 level = 0.5 #... 
 P_shift = binom.ppf(level, 200,0.1) - EV
 
@@ -203,7 +198,7 @@ for iteration in tqdm(range(MaxIter)):
     inventory[L-2,:] = initial
     
     for tau in tqdm(range(1,Periods+1)):
-        
+        tbar = time.time()
         if Draw:
             print('--------------------\\\\\--------------------')
             print('                  Period', tau)
@@ -390,8 +385,8 @@ for iteration in tqdm(range(MaxIter)):
         
         #Initialze plot with Data
         
-    SIM_T = SIM_T + time.time()-LARGE_T
-    potential = p*sum(initial)
+    SIM_T = SIM_T + time.time()-tbar
+    potential = a*sum(initial)
     if PrintSummary:
         print('--------------------\\\\\--------------------')
         print('                   Summary')

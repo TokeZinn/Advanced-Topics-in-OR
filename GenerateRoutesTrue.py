@@ -141,14 +141,14 @@ MaxSingleDist = 400
 Heuristics = False
 Draw = False
 AllowPartial = True
-PrintSummary = False
-MaxIter = 1
+PrintSummary = True
+MaxIter = 10
 Periods = 30  # T = 30
 nStores = 40 # S = 40
 T = range(Periods+1) #Periods
 N = range(nStores+1) #Number of Vertices
 S = range(1,nStores+1) #Number of store-only vertices
-L = 4 # deterministic shelf life in {2,3,4}
+L = 3 # deterministic shelf life in {2,3,4}
 a = 6 # acquisition cost
 p = 10 # selling price
 EV = 20 # expected value of demand
@@ -387,7 +387,6 @@ for iteration in tqdm(range(MaxIter)):
         waste[tau] = sum(i for i in temp)
         initial = numpy.sum(inventory,0)
         
-        print(waste[tau], aquired[tau])
         #Routes that are used
         distance_cost = sum(sum(Dist[R_star[r][i],R_star[r][i+1]] for i in range(len(R_star[r])-1)) for r in R_star)
         
@@ -399,7 +398,7 @@ for iteration in tqdm(range(MaxIter)):
     potential = 0 #a*sum(initial)
     if PrintSummary:
         print('--------------------\\\\\--------------------')
-        print('                   Summary')
+        print('    Summary for iteration %d' %(iteration))
         print('--------------------\\\\\--------------------')
         print()
         

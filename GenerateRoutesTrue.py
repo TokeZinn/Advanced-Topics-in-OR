@@ -8,7 +8,7 @@ import time
 from matplotlib.pyplot import cm
 from tqdm import tqdm
 
-
+from copy import copy
 
 
 LARGE_T = time.time()
@@ -65,13 +65,19 @@ def UpdateInventory(inventory, demand, quantities):
         
     inventory[L-1,:] += delivery
     
-    for l in range(L):
-        for s in N:
-            inventory[l,s] = max(0, inventory[l,s] - demand[s])
-            demand[s] = max(0, demand[s] - inventory[l,s])
-    
+    for s in N:
+        for l in range(L):    
+            if inventory[l,s] >= demand[s]:
+                inventory[l,s] = inventory[l,s] - demand[s]
+                demand[s] = 0
+            else:
+                demand[s] = demand[s] - inventory[l,s]
+                inventory[l,s] = 0
+            
+    waste = copy(inventory[0,:])
     inventory[0,:] = numpy.zeros((1,len(inventory[0,:])))
     inventory[tuple(range(L)),:] = inventory[tuple(range(1,L)) + (0,),:]
+    return(waste)
     
 
 
@@ -134,9 +140,9 @@ LimitPath = True
 MaxSingleDist = 400
 Heuristics = False
 Draw = False
-AllowPartial = False
+AllowPartial = True
 PrintSummary = False
-MaxIter = 30
+MaxIter = 1
 Periods = 30  # T = 30
 nStores = 40 # S = 40
 T = range(Periods+1) #Periods
@@ -153,7 +159,7 @@ TSL = 0.9 # target service level
 LongTermPolishing = False
 
 MyopicPolishing = False
-level = 0.5 #... 
+level = 1 #... 
 P_shift = binom.ppf(level, 200,0.1) - EV
 
 
@@ -164,6 +170,7 @@ Arcs = {(i,j) for i in N for j in N if j != i}
 
 
 Results = {}
+Waste = {}
 
 if L == 2:
     initialrange = 30+1
@@ -175,11 +182,12 @@ if L == 4:
     initialrange = 70+1
     C = 80
 
-numpy.random.seed(100)
+numpy.random.seed(101)
 
 SIM_T = 0
 
 for iteration in tqdm(range(MaxIter)):
+    tbar = time.time()
     VRP = {}
     R = {}
     Z = {}
@@ -190,15 +198,16 @@ for iteration in tqdm(range(MaxIter)):
     Inventory = {}
     Solution = {}
     profit = {}
+    waste = {}
+    aquired = {}
     
     initial = [numpy.random.randint(0,initialrange) for i in N]
     initial[0] = 0
+    first = sum(j for j in initial)
     #demand = [numpy.random.binomial(200, 0.1, size=nStores+1) for t in T]
     inventory = numpy.zeros((L,nStores+1))
     inventory[L-2,:] = initial
-    
     for tau in tqdm(range(1,Periods+1)):
-        tbar = time.time()
         if Draw:
             print('--------------------\\\\\--------------------')
             print('                  Period', tau)
@@ -206,6 +215,7 @@ for iteration in tqdm(range(MaxIter)):
             print()
         Trucks = {}
         demand = numpy.random.binomial(200, 0.1, size=nStores+1)
+        demand[0] = 0
         Demand[tau] = demand
         Inventory[tau] = inventory
         
@@ -283,7 +293,6 @@ for iteration in tqdm(range(MaxIter)):
         
         
         if MyopicPolishing:
-            print("Entered")
             for r in R_star:
                 while True:
                     i_min = None
@@ -370,23 +379,24 @@ for iteration in tqdm(range(MaxIter)):
         
         
         
-        sold_units = sum(min(demand[i],initial[i] + quantities[i]) for i in N)
+        sold_units = sum(min(demand[i],initial[i] + quantities[i]) for i in range(1,nStores+1))
         
-        aquired_units = sum(quantities[i] for i in N)
-        
-        UpdateInventory(inventory,demand,quantities)
+        aquired_units = sum(quantities[i] for i in range(1,nStores+1))
+        aquired[tau] = aquired_units
+        temp = UpdateInventory(inventory,demand,quantities)
+        waste[tau] = sum(i for i in temp)
         initial = numpy.sum(inventory,0)
         
+        print(waste[tau], aquired[tau])
         #Routes that are used
         distance_cost = sum(sum(Dist[R_star[r][i],R_star[r][i+1]] for i in range(len(R_star[r])-1)) for r in R_star)
         
         profit[tau] = p*sold_units - a*aquired_units - distance_cost
         
-        
         #Initialze plot with Data
-        
+    
     SIM_T = SIM_T + time.time()-tbar
-    potential = a*sum(initial)
+    potential = 0 #a*sum(initial)
     if PrintSummary:
         print('--------------------\\\\\--------------------')
         print('                   Summary')
@@ -401,6 +411,9 @@ for iteration in tqdm(range(MaxIter)):
         print()
         print("Total potential: %s" %(potential + sum(profit[tau] for tau in range(1,Periods+1))))
     Results[iteration] = potential + sum(profit[tau] for tau in range(1,Periods+1))
+    total = sum(aquired[tau] for tau in range(1,Periods+1)) + first
+    Waste[iteration] = sum(waste[tau] for tau in range(1,Periods+1))/total
+    
 
 print()
 print('--------------------\\\\\--------------------')
@@ -410,5 +423,6 @@ print()
 if MyopicPolishing:
     print("Solution was polished to be more myopic")
 print("Average Profit over %s runs: %d" %(MaxIter,numpy.mean(list(Results.values()))))
+print("Average Waste over %s runs: %.5f" %(MaxIter,numpy.mean(list(Waste.values()))))
 print("Average Runtime: %.6f" %(SIM_T/MaxIter))
 

@@ -7,11 +7,9 @@ from scipy.stats import binom
 import time
 from matplotlib.pyplot import cm
 from tqdm import tqdm
-
 from copy import copy
 
 
-LARGE_T = time.time()
 
 instance = numpy.loadtxt(fname = "data_SPIRP.text")
 
@@ -139,16 +137,16 @@ MaxPath = 1000
 LimitPath = True
 MaxSingleDist = 400
 Heuristics = False
-Draw = False
+Draw = True
 AllowPartial = True
 PrintSummary = True
-MaxIter = 10
-Periods = 30  # T = 30
+MaxIter = 1
+Periods = 4  # T = 30
 nStores = 40 # S = 40
 T = range(Periods+1) #Periods
 N = range(nStores+1) #Number of Vertices
 S = range(1,nStores+1) #Number of store-only vertices
-L = 3 # deterministic shelf life in {2,3,4}
+L = 2 # deterministic shelf life in {2,3,4}
 a = 6 # acquisition cost
 p = 10 # selling price
 EV = 20 # expected value of demand
@@ -186,6 +184,7 @@ numpy.random.seed(101)
 
 SIM_T = 0
 
+LARGE_T = time.time()
 for iteration in tqdm(range(MaxIter)):
     tbar = time.time()
     VRP = {}

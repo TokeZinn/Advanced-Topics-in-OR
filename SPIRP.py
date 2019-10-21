@@ -27,7 +27,7 @@ instance = numpy.loadtxt(fname = "data_SPIRP.txt")
 
 # -- Simulation Setup -- #
 MaxIter = 1 # Number of Simulations
-Periods = 30  # T = 30
+Periods = 1  # T = 30
 nStores = 40 # S = 40
 
 # -- Model Parameters -- #
@@ -43,12 +43,14 @@ maxTrip = 230 # maximum trip length
 TSL = 0.9 # target service level
 
 # -- Print Settings -- #
-Draw = False # See graph/plot of solution for each time
+Draw = True # See graph/plot of solution for each time
 PrintSummary = False #If a summary should be printed
 
 # -- Our Additions -- # 
 AllowPartial = True #Allow a node to be visited on multiple routes. 
 MyopicPolishing = True #Apply the myopic polishing procedure - Algorithm 4
+
+
 
 ## ---------------- FUNCTIONS --------------- ##
 
@@ -171,6 +173,8 @@ numpy.random.seed(101)
 SIM_T = 0
 
 for iteration in tqdm(range(MaxIter)):
+    if not AllowPartial and MyopicPolishing:
+        print("Runnng Myopic Polishing without Partial Deliveries is NOT recommended.")
     #iteration timer
     tbar = time.time()
     
@@ -265,7 +269,7 @@ for iteration in tqdm(range(MaxIter)):
         
         
         #Draw Plots
-        if Draw:
+        if Draw and not MyopicPolishing:
             print('Solving VRP took: %s' % (time.time() - t))
             print()
             color=cm.rainbow(numpy.linspace(0,1,len(R_star)))
@@ -281,7 +285,7 @@ for iteration in tqdm(range(MaxIter)):
                 for i in range(len(q)-1):
                    x = [instance[q[i],1], instance[q[i+1],1]]
                    y = [instance[q[i],2], instance[q[i+1],2]]
-                   plt.plot(x,y, marker = "o",linestyle = ":",c = color[j-1,:] )
+                   plt.plot(x,y, marker = "o",linestyle = ":" if MyopicPolishing else "-",c = color[j-1,:] )
             
             plt.plot(instance[active,1],instance[active,2],"ro", color = "green")
             
@@ -318,9 +322,6 @@ for iteration in tqdm(range(MaxIter)):
             color=cm.rainbow(numpy.linspace(0,1,len(R_star)))
             plt.plot(instance[range(nStores),1],instance[range(nStores),2],"ro", color = "grey")
             plt.plot(instance[active,1],instance[active,2],"ro", color = "green")
-            for i in active:
-                plt.annotate(i,(instance[i,1],instance[i,2]))
-                plt.plot(instance[0,1],instance[0,2], "ro", color = "red")
 
             j = 0
             for r in R_star:

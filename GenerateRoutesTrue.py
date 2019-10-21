@@ -7,7 +7,6 @@ from scipy.stats import binom
 import time
 from matplotlib.pyplot import cm
 from tqdm import tqdm
-
 from copy import copy
 
 
@@ -158,8 +157,8 @@ TSL = 0.9 # target service level
 
 LongTermPolishing = False
 
-MyopicPolishing = False
-level = 1 #... 
+MyopicPolishing = True
+level = 0.5 #... 
 P_shift = binom.ppf(level, 200,0.1) - EV
 
 
@@ -207,7 +206,7 @@ for iteration in tqdm(range(MaxIter)):
     #demand = [numpy.random.binomial(200, 0.1, size=nStores+1) for t in T]
     inventory = numpy.zeros((L,nStores+1))
     inventory[L-2,:] = initial
-    for tau in tqdm(range(1,Periods+1)):
+    for tau in range(1,Periods+1):
         if Draw:
             print('--------------------\\\\\--------------------')
             print('                  Period', tau)
@@ -387,7 +386,6 @@ for iteration in tqdm(range(MaxIter)):
         waste[tau] = sum(i for i in temp)
         initial = numpy.sum(inventory,0)
         
-        print(waste[tau], aquired[tau])
         #Routes that are used
         distance_cost = sum(sum(Dist[R_star[r][i],R_star[r][i+1]] for i in range(len(R_star[r])-1)) for r in R_star)
         
@@ -399,7 +397,7 @@ for iteration in tqdm(range(MaxIter)):
     potential = 0 #a*sum(initial)
     if PrintSummary:
         print('--------------------\\\\\--------------------')
-        print('                   Summary')
+        print('           Summary for Iteration %d' %(iteration))
         print('--------------------\\\\\--------------------')
         print()
         
